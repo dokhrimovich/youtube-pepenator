@@ -2,6 +2,7 @@
     let videoStartedOn;
     let adStartedOn;
     let videoId = null;
+    let wasMuteAttemptMade = false;
     let shouldUnmuteAfterAd = false;
     const popupAddCloseBtnSelector = '.ytp-ad-overlay-close-container .ytp-ad-overlay-close-button';
     const skipVideoAddBtnSelector = '.ytp-ad-skip-button';
@@ -13,7 +14,7 @@
 
     // region utils
 
-    const isMuted = () => {
+    const getIsMuted = () => {
         try {
             const sliderHandleEl = document.querySelector('.ytp-volume-slider-handle');
             const sliderHandlePosition = parseInt(sliderHandleEl?.style?.left) || 100;
@@ -44,7 +45,12 @@
     const clickMute = () => pleaseClick(muteBtnSelector);
 
     const mute = () => {
-        const isMuted = isMuted();
+        if (wasMuteAttemptMade) {
+            return;
+        }
+
+        wasMuteAttemptMade = true;
+        const isMuted = getIsMuted();
 
         shouldUnmuteAfterAd = !isMuted;
 
@@ -113,10 +119,12 @@
     const onAdOff = () => {
         adStartedOn = null;
 
-        if (videoId && shouldUnmuteAfterAd && getCurrentVolumeState) {
+        if (videoId && wasMuteAttemptMade && shouldUnmuteAfterAd && getIsMuted()) {
             clickMute();
-            shouldUnmuteAfterAd = false;
         }
+
+        wasMuteAttemptMade = false;
+        shouldUnmuteAfterAd = false;
     };
 
     // endregion
@@ -143,6 +151,8 @@
     const adWatcher = () => {
         if (!isAdPlaying()) {
             adStartedOn && onAdOff();
+
+            return;
         }
 
         !adStartedOn && onAdOn();
