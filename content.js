@@ -6,7 +6,7 @@
     let shouldUnmuteAfterAd = false;
     const popupAddCloseBtnSelector = '.ytp-ad-overlay-close-container .ytp-ad-overlay-close-button';
     const skipVideoAddBtnSelector = '.ytp-ad-skip-button';
-    const muteBtnSelector = '.ytp-mute-button';
+    const muteBtnSelector = 'ytd-watch-flexy .ytp-mute-button';
     const addSelector = '.ytp-ad-player-overlay-skip-or-preview';
     const volAreaSelector = '.ytp-volume-area';
     const progressBarSelector = '.ytp-progress-bar';
