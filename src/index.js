@@ -1,6 +1,8 @@
 import { getIsMuted, isAdPlaying, adProbablyUnskippable, pleaseClick, clickMute, mute, getCurrentVideoId } from './utils';
 import { addCorrectors, removeCorrectors } from './accessibilityCorrector';
+import { EventManager } from './eventsManager';
 
+let eventManager;
 let videoStartedOn;
 let adStartedOn;
 let videoId = null;
@@ -49,12 +51,12 @@ const pseudoRouterWatcher = () => {
     videoId = getCurrentVideoId();
 
     if (!videoId) {
-        videoStartedOn && onVideoOff();
+        videoStartedOn && eventManager.emit('videoOff');
 
         return;
     }
 
-    !videoStartedOn && onVideoOn();
+    !videoStartedOn && eventManager.emit('videoOn');
 
     if (videoStartedOn) {
         pleaseClick(skipVideoAddBtnSelector);
@@ -64,12 +66,12 @@ const pseudoRouterWatcher = () => {
 
 const adWatcher = () => {
     if (!isAdPlaying()) {
-        adStartedOn && onAdOff();
+        adStartedOn && eventManager.emit('adOff');
 
         return;
     }
 
-    !adStartedOn && onAdOn();
+    !adStartedOn && eventManager.emit('adOn');
 
     if (adStartedOn && adProbablyUnskippable(adStartedOn) && !wasMuteAttemptMade) {
         shouldUnmuteAfterAd = mute();
@@ -88,11 +90,15 @@ const addAdWatcher = () => {
     removeAdWatcher();
 
     adID = setInterval(adWatcher, 500);
+    eventManager.subscribe('adOn', onAdOn());
+    eventManager.subscribe('adOff', onAdOff());
 };
 
 const removeAdWatcher = () => {
     if (adID) {
         clearInterval(adID);
+        eventManager.unsubscribe('adOn');
+        eventManager.unsubscribe('adOff');
     }
 };
 
@@ -114,6 +120,8 @@ const init = () => {
     if (window.GFYS) {
         return;
     }
+
+    eventManager = new EventManager();
 
     addRouterWatcher();
 

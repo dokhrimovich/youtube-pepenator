@@ -1,10 +1,16 @@
-const muteBtnSelector = 'ytd-watch-flexy .ytp-mute-button';
-const sliderSelector = 'ytd-watch-flexy .ytp-ad-player-overlay-skip-or-preview';
-const addSelector = '.ytp-ad-player-overlay-skip-or-preview';
+const muteBtnSelector = '.ytp-mute-button';
+const sliderSelector = '.ytp-volume-slider-handle';
+const adSelector = '.ytp-ad-player-overlay-skip-or-preview';
+
+const findInDOM = (selector) => {
+    const elements = document.querySelectorAll(selector);
+
+    return Array.from(elements).find(el => el.offsetParent);
+};
 
 export const getIsMuted = () => {
     try {
-        const sliderHandleEl = document.querySelector(sliderSelector);
+        const sliderHandleEl = findInDOM(sliderSelector);
         const sliderHandlePosition = parseInt(sliderHandleEl?.style?.left) || 100;
 
         // // data: "{\"volume\":27,\"muted\":true}"
@@ -22,10 +28,10 @@ export const getIsMuted = () => {
 export const adProbablyUnskippable = (adStartedOn) => new Date() - adStartedOn > 1000;
 
 export const pleaseClick = (selector) => {
-    const btnEl = document.querySelector(selector);
+    const el = findInDOM(selector);
 
-    if (btnEl) {
-        btnEl.click();
+    if (el) {
+        el.click();
     }
 };
 
@@ -47,5 +53,5 @@ export const getCurrentVideoId = () => {
 };
 
 export const isAdPlaying = () => {
-    return !!document.querySelector(addSelector);
+    return !!document.querySelector(adSelector);
 };
