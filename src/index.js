@@ -1,6 +1,6 @@
-import { getIsMuted, isAdPlaying, adProbablyUnskippable, pleaseClick, clickMute, mute, getCurrentVideoId } from './utils';
-import { addCorrectors, removeCorrectors } from './accessibilityCorrector';
 import { EventManager } from './eventsManager';
+import { addCorrectors, removeCorrectors } from './accessibilityCorrector';
+import { getIsMuted, isAdPlaying, adProbablyUnskippable, tryScipAd, clickMute, mute, getCurrentVideoId, closeAdPopup } from './utils';
 
 let eventManager;
 let videoStartedOn;
@@ -8,8 +8,6 @@ let adStartedOn;
 let videoId = null;
 let wasMuteAttemptMade = false;
 let shouldUnmuteAfterAd = false;
-const popupAddCloseBtnSelector = '.ytp-ad-overlay-close-container .ytp-ad-overlay-close-button';
-const skipVideoAddBtnSelector = '.ytp-ad-skip-button';
 
 // region event handlers
 
@@ -59,8 +57,8 @@ const pseudoRouterWatcher = () => {
     !videoStartedOn && eventManager.emit('videoOn');
 
     if (videoStartedOn) {
-        pleaseClick(skipVideoAddBtnSelector);
-        pleaseClick(popupAddCloseBtnSelector);
+        tryScipAd();
+        closeAdPopup();
     }
 };
 
@@ -90,8 +88,8 @@ const addAdWatcher = () => {
     removeAdWatcher();
 
     adID = setInterval(adWatcher, 500);
-    eventManager.subscribe('adOn', onAdOn());
-    eventManager.subscribe('adOff', onAdOff());
+    eventManager.subscribe('adOn', onAdOn);
+    eventManager.subscribe('adOff', onAdOff);
 };
 
 const removeAdWatcher = () => {
@@ -102,16 +100,20 @@ const removeAdWatcher = () => {
     }
 };
 
-const removeRouterWatcher = () => {
-    if (routerID) {
-        clearInterval(routerID);
-    }
-};
-
 const addRouterWatcher = () => {
     removeRouterWatcher();
 
     routerID = setInterval(pseudoRouterWatcher, 500);
+    eventManager.subscribe('videoOn', onVideoOn);
+    eventManager.subscribe('videoOff', onVideoOff);
+};
+
+const removeRouterWatcher = () => {
+    if (routerID) {
+        clearInterval(routerID);
+        eventManager.unsubscribe('videoOn');
+        eventManager.unsubscribe('videoOff');
+    }
 };
 
 // endregion
