@@ -14,35 +14,58 @@ export class EventManager {
 
     unsubscribe(nameOrListener) {
         if (typeof nameOrListener === 'string') {
-            delete this.listeners[nameOrListener];
+            const [alias, name] = nameOrListener.split(':');
 
-            return;
+            if (alias === nameOrListener || alias && name && name !== '*') {
+                this._removeByName(nameOrListener);
+                return;
+            }
+
+            if (alias && (!name || name === '*')) {
+                this._removeByAlias(alias);
+                return;
+            }
         }
 
         if (typeof nameOrListener === 'function') {
-            Object.entries(this.listeners)
-                .some((name, listeners) => {
-                    const index = listeners.findIndex(nameOrListener);
-
-                    if (index === -1) {
-                        return false;
-                    }
-
-                    this.listeners[name].splice(index, 1);
-
-                    if (!this.listeners[name].length) {
-                        delete this.listeners[name];
-                    }
-
-                    return true;
-                });
+            this._removeByListener(nameOrListener);
         }
     }
 
-    emit(name, data) {
-        this.listeners[name]?.forEach((listener) => {
-            listener?.(null, data);
-        });
+    emit(event, data) {
+        Object.keys(this.listeners)
+            .filter(name => name === event || name.match(/.*:(.*)/)?.[1] === event)
+            .forEach(name => this.listeners[name]?.forEach(listener => {
+                listener?.(data);
+            }));
     }
 
+    _removeByName(name) {
+        delete this.listeners[name];
+    }
+
+    _removeByListener(fn) {
+        Object.entries(this.listeners)
+            .some(([name, listeners]) => {
+                const index = listeners.findIndex(fn);
+
+                if (index === -1) {
+                    return false;
+                }
+
+                this.listeners[name].splice(index, 1);
+
+                if (!this.listeners[name].length) {
+                    delete this.listeners[name];
+                }
+
+                return true;
+            });
+    }
+
+    _removeByAlias(alias) {
+        Object.keys(this.listeners)
+            .filter(name => name.startsWith(alias + ':'))
+            .forEach(name => delete this.listeners[name]);
+    }
 }

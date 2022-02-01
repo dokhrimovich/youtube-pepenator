@@ -36,7 +36,8 @@ export const getIsMuted = () => {
     }
 };
 
-export const adProbablyUnskippable = (adStartedOn) => new Date() - adStartedOn > 1000;
+// export const adProbablyUnskippable = (adStartedOn) => new Date() - adStartedOn > 1000 || !findInDOM(adSkipBtnSelector);
+export const adProbablyUnskippable = () => !findInDOM(adSkipBtnSelector);
 
 export const clickMute = () => pleaseClick(muteBtnSelector);
 
