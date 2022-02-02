@@ -1,8 +1,16 @@
 export class EventManager {
 
+    debug = false;
+
     listeners = {};
 
+    constructor(debug) {
+        this.debug = debug;
+    }
+
     subscribe(name, listener) {
+        this._log('subscribe', name)
+
         if (this.listeners[name]) {
             this.listeners[name].push(listener);
 
@@ -12,7 +20,26 @@ export class EventManager {
         this.listeners[name] = [listener];
     }
 
+    once(name, listener) {
+        this._log('once', name);
+
+        const wrappedListener = (...args) => {
+            listener(...args);
+            this._removeByListener(wrappedListener);
+        }
+
+        if (this.listeners[name]) {
+            this.listeners[name].push(wrappedListener);
+
+            return;
+        }
+
+        this.listeners[name] = [wrappedListener];
+    }
+
     unsubscribe(nameOrListener) {
+        this._log('unsubscribe', nameOrListener);
+
         if (typeof nameOrListener === 'string') {
             const [alias, name] = nameOrListener.split(':');
 
@@ -33,21 +60,25 @@ export class EventManager {
     }
 
     emit(event, data) {
-        Object.keys(this.listeners)
+        const foundListeners = Object.keys(this.listeners)
             .filter(name => name === event || name.match(/.*:(.*)/)?.[1] === event)
-            .forEach(name => this.listeners[name]?.forEach(listener => {
-                listener?.(data);
-            }));
+            .flatMap(name => this.listeners[name]);
+
+        this._log('emit', event, 'foundListeners: ', foundListeners.length);
+
+        foundListeners.forEach(listener => listener?.(data));
     }
 
     _removeByName(name) {
         delete this.listeners[name];
+
+        this._logListenersSnapshot();
     }
 
     _removeByListener(fn) {
         Object.entries(this.listeners)
             .some(([name, listeners]) => {
-                const index = listeners.findIndex(fn);
+                const index = listeners.indexOf(fn);
 
                 if (index === -1) {
                     return false;
@@ -61,11 +92,31 @@ export class EventManager {
 
                 return true;
             });
+
+        this._logListenersSnapshot();
     }
 
     _removeByAlias(alias) {
         Object.keys(this.listeners)
             .filter(name => name.startsWith(alias + ':'))
             .forEach(name => delete this.listeners[name]);
+
+        this._logListenersSnapshot();
+    }
+
+    _log(what, ...data) {
+        if (!this.debug) {
+            return;
+        }
+
+        console.debug('DEBUG: EventManager ' + what, ...data);
+    }
+
+    _logListenersSnapshot() {
+        const snapshot = Object.fromEntries(
+            Object.entries(this.listeners)
+                .map(([event, arr]) => [event, arr.length]));
+
+        console.debug('DEBUG:', snapshot);
     }
 }

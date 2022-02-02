@@ -67,3 +67,13 @@ export const tryScipAd = () => {
 export const closeAdPopup = () => {
     pleaseClick(popupAdCloseBtnSelector);
 };
+
+export const withLogger = (prefix = '') => {
+    let debug = !!localStorage.getItem('gfys_debug');
+
+    return debug
+        ? (what, ...data) => {
+            console.debug(['DEBUG:', prefix, what].filter(Boolean).join(' '), ...data);
+        }
+        : () => {};
+};
