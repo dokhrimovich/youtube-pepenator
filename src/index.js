@@ -1,7 +1,8 @@
 import { EventManager } from './eventsManager';
+import { releaseThePepe } from './pepeficator';
 import { addCorrectors, removeCorrectors } from './accessibilityCorrector';
 import {
-    getIsMuted, isAdPlaying, adProbablyUnskippable, tryScipAd,
+    isAdPlaying, adProbablyUnskippable, tryScipAd,
     clickMute, mute, getCurrentVideoId, closeAdPopup, withLogger
 } from './utils';
 
@@ -39,17 +40,15 @@ const startAdWatcher = () => {
 
     eventManager.subscribe('adWatcher:adStarted', () => {
         if (adProbablyUnskippable()) {
+            const pepeOut = releaseThePepe();
             let shouldUnmuteAfterAd = mute();
             log('Unskippable Ad', 'shouldUnmuteAfterAd = ' + shouldUnmuteAfterAd);
 
+            eventManager.once('adEnded', pepeOut);
+
             if (shouldUnmuteAfterAd) {
                 eventManager.once('adEnded', () => {
-                    if (videoId && getIsMuted()) {
-                        log('UNMUTE' , 'Clicked');
-                        clickMute();
-                    } else {
-                        log('UNMUTE' , 'Not clicked');
-                    }
+                    videoId && clickMute();
                 });
             }
         }

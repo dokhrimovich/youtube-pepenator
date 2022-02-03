@@ -4,18 +4,18 @@ const volumeSliderSelector = '.ytp-volume-slider-handle';
 const adSelector = '.ytp-ad-player-overlay-skip-or-preview';
 const popupAdCloseBtnSelector = '.ytp-ad-overlay-close-container .ytp-ad-overlay-close-button';
 
-const findInDOM = (selector) => {
-    const elements = document.querySelectorAll(selector);
-
-    return Array.from(elements).find(el => el.offsetParent);
-};
-
 const pleaseClick = (selector) => {
     const el = findInDOM(selector);
 
     if (el) {
         el.click();
     }
+};
+
+export const findInDOM = (selector) => {
+    const elements = document.querySelectorAll(selector);
+
+    return Array.from(elements).find(el => el.offsetParent);
 };
 
 export const getIsMuted = () => {
