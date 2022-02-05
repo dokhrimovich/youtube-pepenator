@@ -5,6 +5,8 @@
 	"main": "src/assets/background.js",
 	"scripts": {
 		"start": "webpack",
+		"zip": "node build/zip.js",
+		"build": "webpack && npm run zip",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"author": "",
