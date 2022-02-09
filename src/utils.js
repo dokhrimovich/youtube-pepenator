@@ -12,6 +12,10 @@ const pleaseClick = (selector) => {
     }
 };
 
+/**
+ * @param {String} selector
+ * @returns {Element}
+ */
 export const findInDOM = (selector) => {
     const elements = document.querySelectorAll(selector);
 
