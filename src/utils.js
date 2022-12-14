@@ -1,15 +1,33 @@
 const muteBtnSelector = '.ytp-mute-button';
 const adSkipBtnSelector = '.ytp-ad-skip-button';
 const volumeSliderSelector = '.ytp-volume-slider-handle';
-const adSelector = '.ytp-ad-player-overlay-skip-or-preview';
+const adSelector = '.ad-interrupting';
 const popupAdCloseBtnSelector = '.ytp-ad-overlay-close-container .ytp-ad-overlay-close-button';
 
-const pleaseClick = (selector) => {
-    const el = findInDOM(selector);
+const pleaseClick = (selector, attempts = 1, fallback) => {
+    let timeTried = 0;
 
-    if (el) {
-        el.click();
-    }
+    const tryClick = () => {
+        timeTried++;
+        const el = findInDOM(selector);
+
+        if (el) {
+            el.click();
+
+            return;
+        }
+
+        if (timeTried >= attempts) {
+            fallback?.();
+
+            return;
+        }
+
+        window.setTimeout(tryClick, 50);
+    };
+
+    tryClick();
+
 };
 
 /**
@@ -22,9 +40,15 @@ export const findInDOM = (selector) => {
     return Array.from(elements).find(el => el.offsetParent);
 };
 
+// todo rethink and fix
 export const getIsMuted = () => {
     try {
         const sliderHandleEl = findInDOM(volumeSliderSelector);
+
+        if (!sliderHandleEl) {
+            return false;
+        }
+
         const parsedPosition = parseInt(sliderHandleEl?.style?.left);
         const sliderHandlePosition = Number.isNaN(parsedPosition) ? 100 : parsedPosition;
 
@@ -40,18 +64,31 @@ export const getIsMuted = () => {
     }
 };
 
+const tryUnmuteInStorage = () => {
+    const playerData = JSON.parse(localStorage.getItem('yt-player-volume'));
+    const volumeData = JSON.parse(playerData.data);
+
+    const newVolumeData = JSON.stringify({ ...volumeData, muted: false });
+    const newPlayerData = JSON.stringify({ ...playerData, data: newVolumeData });
+
+    localStorage.setItem('yt-player-volume', newPlayerData);
+};
+
 // export const adProbablyUnskippable = (adStartedOn) => new Date() - adStartedOn > 1000 || !findInDOM(adSkipBtnSelector);
 export const adProbablyUnskippable = () => !findInDOM(adSkipBtnSelector);
 
 export const clickMute = () => pleaseClick(muteBtnSelector);
 
 export const mute = () => {
-    const isMuted = getIsMuted();
-    const shouldUnmuteAfterAd = !isMuted;
+    // if (getIsMuted()) {
+    //     return () => {};
+    // }
 
-    !isMuted && clickMute();
+    pleaseClick(`${adSelector} ${muteBtnSelector}`);
 
-    return shouldUnmuteAfterAd;
+    return () => {
+        pleaseClick(`:not(${adSelector}) ${muteBtnSelector}`, 3, tryUnmuteInStorage);
+    };
 };
 
 export const getCurrentVideoId = () => {

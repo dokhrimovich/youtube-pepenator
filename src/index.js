@@ -3,7 +3,7 @@ import { releaseThePepe } from './pepeficator';
 import { addCorrectors, removeCorrectors } from './accessibilityCorrector';
 import {
     isAdPlaying, adProbablyUnskippable, tryScipAd,
-    clickMute, mute, getCurrentVideoId, closeAdPopup, withLogger
+    mute, getCurrentVideoId, closeAdPopup, withLogger
 } from './utils';
 
 let eventManager;
@@ -11,56 +11,59 @@ let videoId = null;
 
 const startAdWatcher = () => {
     let adStartedOn;
+    let onAddEnded;
     let log = withLogger('');
 
     const adWatcher = () => {
-        if (adStartedOn && !isAdPlaying()) {
-            adStartedOn = null;
-            log('event', 'adEnded');
-            eventManager.emit('adEnded');
+        if (!adStartedOn && isAdPlaying()) {
+            adStartedOn = new Date();
+            log('event', 'adStarted');
+
+            onAddEnded = onAddStarted();
 
             return;
         }
 
-        if (!adStartedOn && isAdPlaying()) {
-            adStartedOn = new Date();
-            log('event', 'adStarted');
-            eventManager.emit('adStarted');
+        if (adStartedOn && !isAdPlaying()) {
+            adStartedOn = null;
+            log('event', 'adEnded');
+            onAddEnded?.();
         }
     };
 
-    const removeAdWatcher = () => {
-        log('AdWatcher removed');
-        adStartedOn = null;
-        adID && clearInterval(adID);
-        eventManager.unsubscribe('adWatcher:*');
+    const onAddStarted = () => {
+        if (!adProbablyUnskippable()) {
+            return;
+        }
+
+        log('Unskippable Ad (((');
+
+        const pepeOut = releaseThePepe();
+        const unmute = mute();
+
+        return () => {
+            pepeOut();
+            unmute();
+        }
     };
 
     const adID = setInterval(adWatcher, 400);
 
-    eventManager.subscribe('adWatcher:adStarted', () => {
-        if (adProbablyUnskippable()) {
-            const pepeOut = releaseThePepe();
-            let shouldUnmuteAfterAd = mute();
-            log('Unskippable Ad', 'shouldUnmuteAfterAd = ' + shouldUnmuteAfterAd);
+    adWatcher();
 
-            eventManager.once('adEnded', pepeOut);
+    return () => {
+        log('AdWatcher removed');
 
-            if (shouldUnmuteAfterAd) {
-                eventManager.once('adEnded', () => {
-                    videoId && clickMute();
-                });
-            }
-        }
-    });
+        adStartedOn && onAddEnded?.();
 
-    eventManager.subscribe('adWatcher:videoEnded', () => {
-        removeAdWatcher();
-    });
+        adStartedOn = null;
+        adID && clearInterval(adID);
+    };
 };
 
 const startRouterWatcher = () => {
     let videoStartedOn;
+    let removeAddWatcher;
     let log = withLogger('');
 
     const pseudoRouterWatcher = () => {
@@ -82,6 +85,8 @@ const startRouterWatcher = () => {
 
     const routerID = setInterval(pseudoRouterWatcher, 500);
 
+    pseudoRouterWatcher();
+
     const removeRouterWatcher = () => {
         if (routerID) {
             clearInterval(routerID);
@@ -93,12 +98,13 @@ const startRouterWatcher = () => {
         videoStartedOn = new Date();
 
         log('AdWatcher started');
-        startAdWatcher();
+        removeAddWatcher = startAdWatcher();
         addCorrectors();
     });
     eventManager.subscribe('router:videoEnded', () => {
         videoStartedOn = null;
 
+        removeAddWatcher?.();
         removeCorrectors();
     });
 };

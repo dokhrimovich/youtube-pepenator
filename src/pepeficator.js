@@ -1,7 +1,7 @@
 import { pepeText } from './pepe.text';
 import { findInDOM } from './utils';
 
-const adSelector = '.ytp-ad-player-overlay-skip-or-preview';
+const adSelector = '.ad-interrupting';
 const playerBarHeight = 48;
 
 const updateCurtain = (playerRect) => {
@@ -52,7 +52,7 @@ const createTheCurtain = (playerRect, onDblClick) => {
     document.body.append(curtainEl);
 
     return curtainEl;
-}
+};
 
 const calcStyle = ({ top, right, bottom, left }) => {
     const fortSize = (bottom - top - playerBarHeight) / 75;
@@ -80,13 +80,11 @@ export const releaseThePepe = () => {
     const curtainEl = updateCurtain({ top, right, bottom, left }) ||
         createTheCurtain({ top, right, bottom, left });
 
-    const pepeOut = () => {
-        curtainEl.style.display = 'none';
-        resizeObserver.unobserve(adEl);
-    };
-
     curtainEl.style.removeProperty('display');
     resizeObserver.observe(adEl);
 
-    return pepeOut;
+    return () => {
+        curtainEl.style.display = 'none';
+        resizeObserver.unobserve(adEl);
+    };
 };
