@@ -5,10 +5,10 @@ const adSelector = '.ad-interrupting';
 const popupAdCloseBtnSelector = '.ytp-ad-overlay-close-container .ytp-ad-overlay-close-button';
 
 const pleaseClick = (selector, attempts = 1, fallback) => {
-    let timeTried = 0;
+    let timesTried = 0;
 
     const tryClick = () => {
-        timeTried++;
+        timesTried++;
         const el = findInDOM(selector);
 
         if (el) {
@@ -17,7 +17,7 @@ const pleaseClick = (selector, attempts = 1, fallback) => {
             return;
         }
 
-        if (timeTried >= attempts) {
+        if (timesTried >= attempts) {
             fallback?.();
 
             return;
@@ -117,4 +117,17 @@ export const withLogger = (prefix = '') => {
             console.debug(['DEBUG:', prefix, what].filter(Boolean).join(' '), ...data);
         }
         : () => {};
+};
+
+export const throttle = (fn, delay) => {
+    let prevCall = 0;
+
+    return (...args) => {
+        let now = new Date().getTime();
+
+        if (now - prevCall > delay) {
+            prevCall = now;
+            fn(...args);
+        }
+    }
 };

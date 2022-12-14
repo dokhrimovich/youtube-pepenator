@@ -1,90 +1,108 @@
 import { pepeText } from './pepe.text';
-import { findInDOM } from './utils';
+import { throttle } from './utils';
 
 const adSelector = '.ad-interrupting';
 const playerBarHeight = 48;
 
-const updateCurtain = (playerRect) => {
-    const curtainEl = findInDOM('.pepe-add-curtain');
+const createTheCurtain = () => {
+    const existingCurtainEl = document.querySelector('.pepe-add-curtain');
 
-    if (!curtainEl) {
-        return;
+    if (existingCurtainEl) {
+        return existingCurtainEl;
     }
-
-    const preEl = curtainEl.querySelector('pre');
-    const { fontSize, width, height, top, left } = calcStyle(playerRect);
-
-    preEl.style.fontSize = fontSize;
-
-    curtainEl.style.width = width;
-    curtainEl.style.height = height;
-    curtainEl.style.top = top;
-    curtainEl.style.left = left;
-
-    return curtainEl;
-};
-
-const createTheCurtain = (playerRect, onDblClick) => {
-    const { fontSize, width, height, top, left } = calcStyle(playerRect);
 
     const preEl = document.createElement('pre');
     preEl.innerText = pepeText;
-    preEl.style.fontSize = fontSize;
     preEl.style.fontFamily = 'Courier New';
     preEl.style.lineHeight = '.5em';
     preEl.style.color = 'green';
 
     const curtainEl = document.createElement('div');
     curtainEl.classList.add('pepe-add-curtain');
-    curtainEl.style.position = 'absolute';
+    curtainEl.style.position = 'fixed';
     curtainEl.style.backgroundColor = 'antiquewhite';
-    curtainEl.style.width = width;
-    curtainEl.style.height = height;
-    curtainEl.style.top = top;
-    curtainEl.style.left = left;
     curtainEl.style.textAlign = 'center';
     curtainEl.style.opacity = '.95';
 
     curtainEl.append(preEl);
-
-    curtainEl.addEventListener('dblclick', onDblClick);
 
     document.body.append(curtainEl);
 
     return curtainEl;
 };
 
-const calcStyle = ({ top, right, bottom, left }) => {
-    const fortSize = (bottom - top - playerBarHeight) / 75;
+const updateCurtain = (playerRect) => {
+    const curtainEl = document.querySelector('.pepe-add-curtain');
+
+    if (!curtainEl) {
+        return;
+    }
+
+    const { fontSize, width, height, top, left } = calcStyle(playerRect);
+    const preEl = curtainEl.querySelector('pre');
+
+    preEl.style.fontSize = fontSize;
+
+    curtainEl.style.width = width;
+    curtainEl.style.height = height;
+    curtainEl.style.top = top;
+    curtainEl.style.left = left;
+
+    return curtainEl;
+};
+
+const calcStyle = ({ x, y, width, height }) => {
+    const fortSize = (height - playerBarHeight) / 75;
 
     return {
         fontSize: fortSize + 'px',
-        width: (right - left) + 'px',
-        height: (bottom - top - playerBarHeight) + 'px',
-        top: top + 'px',
-        left: left + 'px'
+        width: width + 'px',
+        height: (height - playerBarHeight) + 'px',
+        left: x + 'px',
+        top: y + 'px'
     };
 };
 
-const onResize = ([entry]) => {
+const onAdResize = throttle(([entry]) => {
     const adEl = entry.target;
-    const { top, right, bottom, left } = adEl.getBoundingClientRect();
 
-    updateCurtain({ top, right, bottom, left });
-};
+    updateCurtain(adEl.getBoundingClientRect());
+}, 100);
+
+const onScroll = throttle(() => {
+    const adEl = document.querySelector(adSelector);
+
+    if (!adEl) {
+        return;
+    }
+
+    updateCurtain(adEl.getBoundingClientRect());
+}, 100);
 
 export const releaseThePepe = () => {
-    const adEl = findInDOM(adSelector);
-    const resizeObserver =  new window.ResizeObserver(onResize);
-    const { top, right, bottom, left } = adEl.getBoundingClientRect();
-    const curtainEl = updateCurtain({ top, right, bottom, left }) ||
-        createTheCurtain({ top, right, bottom, left });
+    const adEl = document.querySelector(adSelector);
+
+    if (!adEl) {
+        return () => {};
+    }
+
+    const curtainEl = createTheCurtain();
+    const resizeObserver =  new window.ResizeObserver(onAdResize);
+
+    const hidePepe = () => {
+        curtainEl.style.display = 'none';
+        resizeObserver.unobserve(adEl);
+
+        curtainEl.removeEventListener('dblclick', hidePepe);
+        document.removeEventListener('scroll', onScroll);
+    };
+
+    document.addEventListener('scroll', onScroll);
+    curtainEl.addEventListener('dblclick', hidePepe);
+    updateCurtain(adEl.getBoundingClientRect());
 
     curtainEl.style.removeProperty('display');
     resizeObserver.observe(adEl);
 
-    return () => {
-        curtainEl.style.display = 'none';
-        resizeObserver.unobserve(adEl);
-    };
+    return hidePepe;
 };
