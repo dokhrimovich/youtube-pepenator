@@ -1,11 +1,14 @@
 const exec = require('child_process').execSync;
 
-exec('powershell Compress-Archive ./dist/* extension.zip -Force', {
-    shell: 'powershell.exe'
-});
+const isWin = process.platform === 'win32';
 
-// todo for UNIX-systems
-// exec(`zip -r extension.zip *`, {
-//     cwd: 'dist/',
-//     encoding: 'utf-8'
-// });
+if (isWin) {
+    exec('powershell Compress-Archive ./dist/* extension.zip -Force', {
+        shell: 'powershell.exe'
+    });
+} else {
+    exec(`zip -r ../extension.zip *`, {
+        cwd: 'dist/',
+        encoding: 'utf-8'
+    });
+}
