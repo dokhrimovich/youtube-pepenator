@@ -123,4 +123,24 @@ const init = () => {
     window.GFYS = true;
 };
 
-init();
+//init();
+
+(() => {
+    document.body.addEventListener('click', (event) => {
+        const progressBarEl = event.target.closest('.ytp-progress-bar');
+
+        if (!progressBarEl) {
+            return;
+        }
+
+        const activeElement = document.activeElement;
+        const videoPlayerEl = activeElement.closest('.html5-video-player');
+
+        if (!videoPlayerEl) {
+            return;
+        }
+
+        activeElement.blur();
+        videoPlayerEl.focus();
+    });
+})();
